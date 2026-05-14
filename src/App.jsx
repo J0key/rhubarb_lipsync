@@ -72,58 +72,61 @@ function App() {
     setCurrentPage(page);
   };
 
-  if (currentPage === PAGES.evaluation) {
-    return <VASEvaluation onBack={() => navigate(PAGES.avatar)} />;
-  }
-
-  if (currentPage === PAGES.rtf) {
-    return <RTFCalculation onBack={() => navigate(PAGES.avatar)} />;
-  }
+  const isAvatar = currentPage === PAGES.avatar;
 
   return (
-    <div className="relative w-full h-full">
-      {!sceneReady && <LoadingOverlay />}
-      <Canvas shadows camera={{ position: [0, 0, 5], fov: 30 }}>
-        <color attach="background" args={["#ececec"]} />
-        <Suspense fallback={null}>
-          <Experience />
-          <SceneReadyTracker onReady={() => setSceneReady(true)} />
-        </Suspense>
-      </Canvas>
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
-        <TypingBox />
-      </div>
-      <div className="absolute top-4 right-4 z-10 flex gap-2">
-        <button
-          onClick={() => navigate(PAGES.rtf)}
-          className="bg-emerald-500/70 hover:bg-emerald-500/90 rounded-xl py-2 px-4 text-white text-sm font-medium cursor-pointer transition-all flex items-center gap-2 backdrop-blur-md border border-white/10"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-4 h-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+    <>
+      {/* Avatar scene always mounted to avoid re-loading */}
+      <div className="relative w-full h-full" style={{ display: isAvatar ? "block" : "none" }}>
+        {!sceneReady && <LoadingOverlay />}
+        <Canvas shadows camera={{ position: [0, 0, 5], fov: 30 }}>
+          <color attach="background" args={["#ececec"]} />
+          <Suspense fallback={null}>
+            <Experience />
+            <SceneReadyTracker onReady={() => setSceneReady(true)} />
+          </Suspense>
+        </Canvas>
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
+          <TypingBox />
+        </div>
+        <div className="absolute top-4 right-4 z-10 flex gap-2">
+          <button
+            onClick={() => navigate(PAGES.rtf)}
+            className="bg-emerald-500/70 hover:bg-emerald-500/90 rounded-xl py-2 px-4 text-white text-sm font-medium cursor-pointer transition-all flex items-center gap-2 backdrop-blur-md border border-white/10"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          RTF Calculation
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate(PAGES.evaluation)}
-          aria-pressed={currentPage === PAGES.evaluation}
-          className="bg-white/15 backdrop-blur-xl hover:bg-white/25 rounded-xl py-2 px-4 text-gray-700 text-sm font-medium cursor-pointer transition-all border border-white/20"
-        >
-          VAS Evaluation
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            RTF Calculation
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate(PAGES.evaluation)}
+            className="bg-white/15 backdrop-blur-xl hover:bg-white/25 rounded-xl py-2 px-4 text-gray-700 text-sm font-medium cursor-pointer transition-all border border-white/20"
+          >
+            VAS Evaluation
+          </button>
+        </div>
       </div>
-    </div>
+
+      {currentPage === PAGES.rtf && (
+        <RTFCalculation onBack={() => navigate(PAGES.avatar)} />
+      )}
+      {currentPage === PAGES.evaluation && (
+        <VASEvaluation onBack={() => navigate(PAGES.avatar)} />
+      )}
+    </>
   );
 }
 
