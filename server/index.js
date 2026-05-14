@@ -7,11 +7,15 @@ import path from "path";
 import { performance } from "perf_hooks";
 
 const ROOT_DIR = process.cwd();
-const RHUBARB_DIR =
-  process.env.RHUBARB_DIR ||
-  path.resolve(ROOT_DIR, "Rhubarb-Lip-Sync-1.14.0-Windows");
-const RHUBARB_PATH = process.env.RHUBARB_PATH || path.join(RHUBARB_DIR, "rhubarb.exe");
+const IS_WINDOWS = process.platform === "win32";
+const DEFAULT_RHUBARB_DIR = IS_WINDOWS
+  ? path.resolve(ROOT_DIR, "Rhubarb-Lip-Sync-1.14.0-Windows")
+  : path.resolve(ROOT_DIR, "Rhubarb-Lip-Sync-1.14.0-Linux");
+const DEFAULT_RHUBARB_BINARY = IS_WINDOWS ? "rhubarb.exe" : "rhubarb";
+const RHUBARB_DIR = process.env.RHUBARB_DIR || DEFAULT_RHUBARB_DIR;
+const RHUBARB_PATH = process.env.RHUBARB_PATH || path.join(RHUBARB_DIR, DEFAULT_RHUBARB_BINARY);
 const PORT = process.env.PORT || 3001;
+const DIST_DIR = path.resolve(ROOT_DIR, "dist");
 
 const loadEnvFile = () => {
   const envPath = path.resolve(ROOT_DIR, ".env.local");
@@ -110,6 +114,48 @@ const runRhubarb = async ({ wavPath, outputPath }) => {
   });
 };
 
+const MIME_TYPES = {
+  ".html": "text/html",
+  ".js": "application/javascript",
+  ".css": "text/css",
+  ".json": "application/json",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+  ".glb": "model/gltf-binary",
+  ".woff2": "font/woff2",
+};
+
+const serveStatic = async (req, res) => {
+  let urlPath = req.url.split("?")[0];
+  if (urlPath === "/") urlPath = "/index.html";
+  const filePath = path.join(DIST_DIR, urlPath);
+  if (!filePath.startsWith(DIST_DIR)) {
+    res.writeHead(403);
+    res.end("Forbidden");
+    return;
+  }
+  if (existsSync(filePath)) {
+    const ext = path.extname(filePath);
+    const mime = MIME_TYPES[ext] || "application/octet-stream";
+    const content = await readFile(filePath);
+    res.writeHead(200, { "Content-Type": mime });
+    res.end(content);
+    return;
+  }
+  // SPA fallback
+  const indexPath = path.join(DIST_DIR, "index.html");
+  if (existsSync(indexPath)) {
+    const content = await readFile(indexPath);
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(content);
+    return;
+  }
+  res.writeHead(404);
+  res.end("Not found");
+};
+
 const handler = async (req, res) => {
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
@@ -121,52 +167,51 @@ const handler = async (req, res) => {
     return;
   }
 
-  if (req.method !== "POST" || req.url !== "/api/rhubarb") {
-    res.writeHead(404);
-    res.end("Not found");
+  if (req.method === "POST" && req.url === "/api/rhubarb") {
+    try {
+      const body = await collectRequestBody(req);
+      const payload = JSON.parse(body || "{}");
+      const text = String(payload.text || "").trim();
+      const voice = "id-ID-ArdiNeural";
+
+      if (!text) {
+        jsonResponse(res, 400, { error: "Text is required" });
+        return;
+      }
+      if (!existsSync(RHUBARB_PATH)) {
+        jsonResponse(res, 500, { error: "rhubarb binary not found" });
+        return;
+      }
+
+      const ttsStart = performance.now();
+      const wavBuffer = await synthesizeAzureTTS({ text, voice });
+      const ttsProcessingTime = (performance.now() - ttsStart) / 1000;
+      const stamp = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const wavPath = path.join(tmpdir(), `rhubarb-${stamp}.wav`);
+      const outputPath = path.join(tmpdir(), `rhubarb-${stamp}.json`);
+
+      await writeFile(wavPath, wavBuffer);
+      await runRhubarb({ wavPath, outputPath });
+      const rhubarbJson = await readFile(outputPath, "utf8");
+      const rhubarbData = JSON.parse(rhubarbJson);
+
+      jsonResponse(res, 200, {
+        rhubarbData,
+        audioBase64: wavBuffer.toString("base64"),
+        audioMime: "audio/wav",
+        processingTime: ttsProcessingTime,
+        processingTimeSource: "Azure TTS request",
+      });
+
+      await unlink(wavPath);
+      await unlink(outputPath);
+    } catch (error) {
+      jsonResponse(res, 500, { error: error.message || "Server error" });
+    }
     return;
   }
 
-  try {
-    const body = await collectRequestBody(req);
-    const payload = JSON.parse(body || "{}");
-    const text = String(payload.text || "").trim();
-    const voice = "id-ID-ArdiNeural";
-
-    if (!text) {
-      jsonResponse(res, 400, { error: "Text is required" });
-      return;
-    }
-    if (!existsSync(RHUBARB_PATH)) {
-      jsonResponse(res, 500, { error: "rhubarb.exe not found" });
-      return;
-    }
-
-    const ttsStart = performance.now();
-    const wavBuffer = await synthesizeAzureTTS({ text, voice });
-    const ttsProcessingTime = (performance.now() - ttsStart) / 1000;
-    const stamp = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    const wavPath = path.join(tmpdir(), `rhubarb-${stamp}.wav`);
-    const outputPath = path.join(tmpdir(), `rhubarb-${stamp}.json`);
-
-    await writeFile(wavPath, wavBuffer);
-    await runRhubarb({ wavPath, outputPath });
-    const rhubarbJson = await readFile(outputPath, "utf8");
-    const rhubarbData = JSON.parse(rhubarbJson);
-
-    jsonResponse(res, 200, {
-      rhubarbData,
-      audioBase64: wavBuffer.toString("base64"),
-      audioMime: "audio/wav",
-      processingTime: ttsProcessingTime,
-      processingTimeSource: "Azure TTS request",
-    });
-
-    await unlink(wavPath);
-    await unlink(outputPath);
-  } catch (error) {
-    jsonResponse(res, 500, { error: error.message || "Server error" });
-  }
+  await serveStatic(req, res);
 };
 
 loadEnvFile();
