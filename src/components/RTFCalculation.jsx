@@ -9,7 +9,6 @@ export const AUDIO_FORMAT = {
 const DEFAULT_SILENCE_THRESHOLD = 0.01;
 const DEFAULT_FRAME_MS = 10;
 const WAV_FORMAT_PCM = 1;
-const DEFAULT_DURATION_MODE = "full";
 
 const getAudioContext = () => {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -236,7 +235,7 @@ export const getDecodedDurationWithoutSilence = (
 export const calculateRTFFromBlob = async (
   audioBlob,
   processingTime,
-  { durationMode = DEFAULT_DURATION_MODE, ...trimOptions } = {},
+  { durationMode = "full", ...trimOptions } = {},
 ) => {
   if (!audioBlob) {
     throw new Error("Audio blob is required.");
@@ -248,14 +247,13 @@ export const calculateRTFFromBlob = async (
   try {
     const wav = getPcmWavDurationWithoutSilence(arrayBuffer, trimOptions);
     const duration =
-      // durationMode === "trimmed" ? wav.duration : wav.decodedDuration;
-      (durationMode = wav.decodedDuration);
+      durationMode === "trimmed" ? wav.duration : wav.decodedDuration;
 
     if (duration <= 0) {
       throw new Error("Decoded audio duration is 0.");
     }
 
-    const rtf = processingTime / decodedDuration;
+    const rtf = processingTime / duration;
 
     return {
       rtf,
@@ -450,9 +448,9 @@ export const RTFCalculation = ({
                   </div>
                 </div>
                 <div className="bg-black/20 rounded-xl p-4 border border-white/10">
-                  <div className="text-gray-500 text-xs mb-1">RTF Duration</div>
+                  <div className="text-gray-500 text-xs mb-1">RTF</div>
                   <div className="text-white text-2xl font-semibold">
-                    {result.rtf.toFixed(4)}s
+                    {result.rtf.toFixed(4)}
                   </div>
                 </div>
               </div>
