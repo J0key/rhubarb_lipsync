@@ -1,5 +1,5 @@
 import { createServer } from "http";
-import { spawn } from "child_process";
+import { spawn, execSync } from "child_process";
 import { readFile, writeFile, unlink } from "fs/promises";
 import { existsSync, readFileSync } from "fs";
 import { tmpdir } from "os";
@@ -215,6 +215,12 @@ const handler = async (req, res) => {
 };
 
 loadEnvFile();
+
+if (!IS_WINDOWS && existsSync(RHUBARB_PATH)) {
+  try {
+    execSync(`chmod +x "${RHUBARB_PATH}"`);
+  } catch (_) {}
+}
 
 createServer(handler).listen(PORT, () => {
   console.log(`Rhubarb server listening on http://localhost:${PORT}`);
