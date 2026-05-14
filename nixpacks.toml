@@ -1,0 +1,8 @@
+[phases.setup]
+cmds = ["chmod +x Rhubarb-Lip-Sync-1.14.0-Linux/rhubarb"]
+
+[phases.build]
+cmds = ["npm run railway:build"]
+
+[start]
+cmd = "node server/index.js"
