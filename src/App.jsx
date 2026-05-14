@@ -1,9 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
+import { useProgress } from "@react-three/drei";
 import { Experience } from "./components/Experience";
 import { RTFCalculation } from "./components/RTFCalculation";
 import { TypingBox } from "./components/TypingBox";
 import { VASEvaluation } from "./components/VASEvaluation";
+
+function SceneReadyTracker({ onReady }) {
+  const { active, progress } = useProgress();
+
+  useEffect(() => {
+    if (!active && progress === 100) onReady();
+  }, [active, progress, onReady]);
+
+  return null;
+}
+
+function LoadingOverlay() {
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#ececec]">
+      <div className="relative w-16 h-16 mb-4">
+        <div className="absolute inset-0 rounded-full border-4 border-gray-300" />
+        <div className="absolute inset-0 rounded-full border-4 border-t-emerald-500 animate-spin" />
+      </div>
+      <p className="text-gray-600 text-sm font-medium tracking-wide">Loading...</p>
+    </div>
+  );
+}
 
 const PAGES = {
   avatar: "avatar",
@@ -18,6 +41,22 @@ const getPageFromHash = () => {
 
 function App() {
   const [currentPage, setCurrentPage] = useState(getPageFromHash);
+  const [sceneReady, setSceneReady] = useState(false);
+
+  useEffect(() => {
+    // Unlock AudioContext on first user gesture (required by browsers on HTTPS)
+    const unlock = () => {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        ctx.resume().then(() => ctx.close());
+      }
+      document.removeEventListener("click", unlock);
+      document.removeEventListener("keydown", unlock);
+    };
+    document.addEventListener("click", unlock, { once: true });
+    document.addEventListener("keydown", unlock, { once: true });
+  }, []);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -43,9 +82,13 @@ function App() {
 
   return (
     <div className="relative w-full h-full">
+      {!sceneReady && <LoadingOverlay />}
       <Canvas shadows camera={{ position: [0, 0, 5], fov: 30 }}>
         <color attach="background" args={["#ececec"]} />
-        <Experience />
+        <Suspense fallback={null}>
+          <Experience />
+          <SceneReadyTracker onReady={() => setSceneReady(true)} />
+        </Suspense>
       </Canvas>
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
         <TypingBox />

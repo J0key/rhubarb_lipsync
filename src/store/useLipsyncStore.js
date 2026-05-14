@@ -100,7 +100,16 @@ export const useLipsyncStore = create((set, get) => ({
       };
 
       set({ loading: false, currentMessage: message, lastOutput: output });
-      audioPlayer.play();
+      audioPlayer.play().catch((err) => {
+        console.warn("Autoplay blocked, retrying on next user interaction:", err);
+        const resume = () => {
+          audioPlayer.play().catch(console.error);
+          document.removeEventListener("click", resume);
+          document.removeEventListener("keydown", resume);
+        };
+        document.addEventListener("click", resume, { once: true });
+        document.addEventListener("keydown", resume, { once: true });
+      });
     } catch (error) {
       console.error('Speak error:', error);
       set({ loading: false, currentMessage: null });
