@@ -1,8 +1,14 @@
 import { useState } from "react";
 import { useLipsyncStore } from "../store/useLipsyncStore";
 
+const VOICES = [
+  { label: "Indonesia", lang: "ID", voice: "id-ID-ArdiNeural" },
+  { label: "English", lang: "us", voice: "en-US-GuyNeural" },
+];
+
 export const TypingBox = () => {
   const [text, setText] = useState("");
+  const [selectedVoice, setSelectedVoice] = useState(VOICES[0]);
   const {
     loading,
     speak,
@@ -14,7 +20,7 @@ export const TypingBox = () => {
 
   const handleSubmit = () => {
     if (text.trim()) {
-      speak(text);
+      speak(text, selectedVoice.voice);
       setText("");
     }
   };
@@ -25,10 +31,27 @@ export const TypingBox = () => {
 
   return (
     <div className="bg-white/15 backdrop-blur-xl rounded-2xl p-4 sm:p-6 w-[92vw] sm:w-125 max-w-125 shadow-lg border border-white/20">
-      <h2 className="text-gray-800 text-lg sm:text-xl font-semibold mb-2">
+      <h2 className="text-gray-800 text-lg sm:text-xl font-semibold mb-3">
         Rhubarb Lipsync
       </h2>
 
+      {/* Language toggle */}
+      <div className="flex gap-2 mb-3">
+        {VOICES.map((v) => (
+          <button
+            key={v.voice}
+            onClick={() => setSelectedVoice(v)}
+            className={`rounded-full py-1.5 px-4 text-xs font-semibold cursor-pointer transition-all flex items-center gap-1.5 ${
+              selectedVoice.voice === v.voice
+                ? "bg-green-500 text-white shadow"
+                : "bg-white/20 text-gray-700 hover:bg-white/40"
+            }`}
+          >
+            <span className="uppercase text-[10px] opacity-70">{v.lang}</span>
+            {v.label}
+          </button>
+        ))}
+      </div>
 
       {loading ? (
         <div className="flex justify-center items-center py-3 gap-3 text-gray-800">

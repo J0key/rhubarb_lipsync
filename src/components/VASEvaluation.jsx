@@ -1,50 +1,67 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useLipsyncStore } from "../store/useLipsyncStore";
-import { analyzeSentence, RHUBARB_VISEMES } from "../data/phonemeVisemeMap";
+import { RHUBARB_VISEMES, phonemizerToExpected } from "../data/ipaVisemeMap";
 
 export const VASEvaluation = ({ onBack }) => {
   const { lastOutput } = useLipsyncStore();
   const [scriptText, setScriptText] = useState("");
   const [analysisResult, setAnalysisResult] = useState(null);
+  const [phonemizerError, setPhonemizerError] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
 
   const handleLoadFromGenerate = () => {
     if (lastOutput?.text) {
       setScriptText(lastOutput.text);
       setAnalysisResult(null);
+      setPhonemizerError(null);
     }
   };
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     if (!scriptText.trim()) return;
     if (!lastOutput?.rhubarbData?.mouthCues) {
       alert("No Rhubarb viseme data available. Please generate lipsync first.");
       return;
     }
 
-    const expectedPhonemes = analyzeSentence(scriptText);
+    setAnalyzing(true);
+    setPhonemizerError(null);
+    setAnalysisResult(null);
+
+    let expectedPhonemes;
+    try {
+      const res = await fetch("/api/phonemize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: scriptText, lang: "id" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Phonemize failed");
+      expectedPhonemes = phonemizerToExpected(data.words);
+    } catch (err) {
+      setPhonemizerError(err.message);
+      setAnalyzing(false);
+      return;
+    }
 
     // Get detected visemes from Rhubarb output (exclude REST/X)
     const detectedCues = lastOutput.rhubarbData.mouthCues.filter(
       (cue) => cue.value !== "X"
     );
 
-    // Build set of detected viseme IDs from Rhubarb (unique values)
+    // Set of viseme classes Rhubarb actually produced
     const detectedVisemeSet = new Set(detectedCues.map((c) => c.value));
 
-    // For each phoneme, check if its expected viseme exists in the detected set
-    // This handles Rhubarb's coalescing behavior (multiple phonemes → same viseme class)
     const comparison = expectedPhonemes.map((expected, index) => {
-      const detectedViseme = detectedVisemeSet.has(expected.expectedViseme)
-        ? expected.expectedViseme
-        : null;
       const isMatch =
         expected.expectedViseme !== null &&
         detectedVisemeSet.has(expected.expectedViseme);
+      const detectedViseme = isMatch ? expected.expectedViseme : null;
 
       return {
         index: index + 1,
         word: expected.word,
-        phoneme: expected.phoneme,
+        phoneme: expected.phone,
         expectedViseme: expected.expectedViseme,
         expectedVisemeName: expected.expectedVisemeName,
         expectedMorphTarget: expected.expectedMorphTarget,
@@ -60,7 +77,6 @@ export const VASEvaluation = ({ onBack }) => {
       };
     });
 
-    // Calculate VAS: correct = phonemes whose expected viseme was detected by Rhubarb
     const evaluable = comparison.filter((c) => !c.notInDictionary && c.expectedViseme !== null);
     const correct = evaluable.filter((c) => c.isMatch).length;
     const total = evaluable.length;
@@ -74,6 +90,7 @@ export const VASEvaluation = ({ onBack }) => {
       totalDetected: detectedCues.length,
       totalExpected: expectedPhonemes.length,
     });
+    setAnalyzing(false);
   };
 
   const getScoreColor = (score) => {
@@ -163,14 +180,14 @@ export const VASEvaluation = ({ onBack }) => {
             </button>
             <button
               onClick={handleAnalyze}
-              disabled={!scriptText.trim() || !lastOutput?.rhubarbData}
+              disabled={analyzing || !scriptText.trim() || !lastOutput?.rhubarbData}
               className={`rounded-xl py-2 px-4 text-sm cursor-pointer transition-all font-medium ${
-                scriptText.trim() && lastOutput?.rhubarbData
+                !analyzing && scriptText.trim() && lastOutput?.rhubarbData
                   ? "bg-purple-500/70 hover:bg-purple-500/90 text-white"
                   : "bg-gray-600/40 text-gray-400 cursor-not-allowed"
               }`}
             >
-              Analyze VAS
+              {analyzing ? "Analyzing..." : "Analyze VAS"}
             </button>
           </div>
           {lastOutput && (
@@ -182,6 +199,11 @@ export const VASEvaluation = ({ onBack }) => {
           {!lastOutput && (
             <p className="text-yellow-400/70 text-xs mt-2">
               No lipsync data available. Generate lipsync on Avatar page first.
+            </p>
+          )}
+          {phonemizerError && (
+            <p className="text-red-400 text-xs mt-2">
+              Phonemizer error: {phonemizerError}
             </p>
           )}
         </div>
@@ -244,7 +266,7 @@ export const VASEvaluation = ({ onBack }) => {
                         #
                       </th>
                       <th className="text-left py-3 px-2 text-gray-400 font-medium">
-                        Kata · Fonem
+                        Kata · IPA Phone
                       </th>
                       <th className="text-left py-3 px-2 text-gray-400 font-medium">
                         Expected Viseme ID

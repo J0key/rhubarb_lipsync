@@ -92,6 +92,32 @@ const synthesizeAzureTTS = async ({ text, voice }) => {
   return Buffer.from(arrayBuffer);
 };
 
+const runPhonemizer = ({ text, lang }) => {
+  return new Promise((resolve, reject) => {
+    const scriptPath = path.resolve(ROOT_DIR, "server", "phonemize_ipa.py");
+    const py = IS_WINDOWS ? "python" : "python3";
+    const proc = spawn(py, [scriptPath, lang, text], {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+    proc.stdout.on("data", (c) => { stdout += c.toString(); });
+    proc.stderr.on("data", (c) => { stderr += c.toString(); });
+    proc.on("error", reject);
+    proc.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(`phonemizer failed (${code}): ${stderr}`));
+        return;
+      }
+      try {
+        resolve(JSON.parse(stdout));
+      } catch {
+        reject(new Error(`phonemizer bad JSON: ${stdout}`));
+      }
+    });
+  });
+};
+
 const runRhubarb = async ({ wavPath, outputPath }) => {
   return new Promise((resolve, reject) => {
     const args = ["-f", "json", "-o", outputPath, wavPath];
@@ -167,12 +193,34 @@ const handler = async (req, res) => {
     return;
   }
 
+  if (req.method === "POST" && req.url === "/api/phonemize") {
+    try {
+      const body = await collectRequestBody(req);
+      const payload = JSON.parse(body || "{}");
+      const text = String(payload.text || "").trim();
+      const lang = String(payload.lang || "id").trim();
+
+      if (!text) {
+        jsonResponse(res, 400, { error: "Text is required" });
+        return;
+      }
+
+      const result = await runPhonemizer({ text, lang });
+      jsonResponse(res, 200, { words: result });
+    } catch (error) {
+      jsonResponse(res, 500, { error: error.message || "Phonemizer error" });
+    }
+    return;
+  }
+
   if (req.method === "POST" && req.url === "/api/rhubarb") {
     try {
       const body = await collectRequestBody(req);
       const payload = JSON.parse(body || "{}");
       const text = String(payload.text || "").trim();
-      const voice = "id-ID-ArdiNeural";
+      const ALLOWED_VOICES = new Set(["id-ID-ArdiNeural", "en-US-GuyNeural"]);
+      const requestedVoice = String(payload.voice || "").trim();
+      const voice = ALLOWED_VOICES.has(requestedVoice) ? requestedVoice : "id-ID-ArdiNeural";
 
       if (!text) {
         jsonResponse(res, 400, { error: "Text is required" });

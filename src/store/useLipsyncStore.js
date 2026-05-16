@@ -42,7 +42,7 @@ export const useLipsyncStore = create((set, get) => ({
   lastOutput: null,
 
   // Speak function - generates audio and visemes
-  speak: async (text) => {
+  speak: async (text, voice) => {
     if (!text.trim()) return;
 
     set({ loading: true });
@@ -51,7 +51,7 @@ export const useLipsyncStore = create((set, get) => ({
       const response = await fetch("/api/rhubarb", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, voice }),
       });
 
       if (!response.ok) {
