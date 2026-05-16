@@ -1,21 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLipsyncStore } from "../store/useLipsyncStore";
 import { RHUBARB_VISEMES, phonemizerToExpected } from "../data/ipaVisemeMap";
 
 export const VASEvaluation = ({ onBack }) => {
   const { lastOutput } = useLipsyncStore();
-  const [scriptText, setScriptText] = useState("");
+  const [scriptText, setScriptText] = useState(lastOutput?.text || "");
   const [analysisResult, setAnalysisResult] = useState(null);
   const [phonemizerError, setPhonemizerError] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
 
-  const handleLoadFromGenerate = () => {
+  useEffect(() => {
     if (lastOutput?.text) {
       setScriptText(lastOutput.text);
       setAnalysisResult(null);
       setPhonemizerError(null);
     }
-  };
+  }, [lastOutput]);
 
   const handleAnalyze = async () => {
     if (!scriptText.trim()) return;
@@ -50,34 +50,42 @@ export const VASEvaluation = ({ onBack }) => {
     );
 
     // Set of viseme classes Rhubarb actually produced
-    const detectedVisemeSet = new Set(detectedCues.map((c) => c.value));
+    const rhubarbVisemeSet = new Set(detectedCues.map((c) => c.value));
 
+    // Per-phoneme class coverage:
+    // Each phoneme from user input is checked whether its viseme class
+    // appears anywhere in the Rhubarb output. This is fair because:
+    // - each phoneme is evaluated independently
+    // - no temporal alignment assumed
+    // - if Rhubarb never produces a class, all phonemes of that class are missed
     const comparison = expectedPhonemes.map((expected, index) => {
-      const isMatch =
-        expected.expectedViseme !== null &&
-        detectedVisemeSet.has(expected.expectedViseme);
-      const detectedViseme = isMatch ? expected.expectedViseme : null;
+      if (expected.notInDictionary || expected.expectedViseme === null) {
+        return {
+          index: index + 1,
+          word: expected.word,
+          phoneme: expected.phone,
+          expectedViseme: expected.expectedViseme,
+          detectedViseme: null,
+          isMatch: false,
+          notInDictionary: expected.notInDictionary || false,
+        };
+      }
+
+      const covered = rhubarbVisemeSet.has(expected.expectedViseme);
+      const detectedViseme = covered ? expected.expectedViseme : null;
 
       return {
         index: index + 1,
         word: expected.word,
         phoneme: expected.phone,
         expectedViseme: expected.expectedViseme,
-        expectedVisemeName: expected.expectedVisemeName,
-        expectedMorphTarget: expected.expectedMorphTarget,
         detectedViseme,
-        detectedVisemeName: detectedViseme
-          ? RHUBARB_VISEMES[detectedViseme]?.name || "?"
-          : "-",
-        detectedMorphTarget: detectedViseme
-          ? RHUBARB_VISEMES[detectedViseme]?.morphTarget || "?"
-          : "-",
-        isMatch,
-        notInDictionary: expected.notInDictionary || false,
+        isMatch: covered,
+        notInDictionary: false,
       };
     });
 
-    const evaluable = comparison.filter((c) => !c.notInDictionary && c.expectedViseme !== null);
+    const evaluable = comparison.filter((c) => !c.notInDictionary);
     const correct = evaluable.filter((c) => c.isMatch).length;
     const total = evaluable.length;
     const vasScore = total > 0 ? (correct / total) * 100 : 0;
@@ -131,14 +139,14 @@ export const VASEvaluation = ({ onBack }) => {
             Back to Avatar
           </button>
           <h1 className="text-white text-2xl font-bold">
-            VAS Evaluation Rhubarb
+            VAS Evaluation — Rhubarb
           </h1>
         </div>
 
         {/* Input Section */}
         <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 mb-6 border border-white/20">
           <h2 className="text-white text-lg font-semibold mb-3">
-            Script Input
+            Script
           </h2>
           <div className="flex gap-3 items-start">
             <textarea
@@ -152,32 +160,7 @@ export const VASEvaluation = ({ onBack }) => {
               rows={2}
             />
           </div>
-          <div className="flex gap-3 mt-3">
-            <button
-              onClick={handleLoadFromGenerate}
-              disabled={!lastOutput}
-              className={`rounded-xl py-2 px-4 text-sm cursor-pointer transition-all flex items-center gap-2 ${
-                lastOutput
-                  ? "bg-blue-500/60 hover:bg-blue-500/80 text-white"
-                  : "bg-gray-600/40 text-gray-400 cursor-not-allowed"
-              }`}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                />
-              </svg>
-              Load from Last Generate
-            </button>
+          <div className="flex gap-3 mt-3 items-center flex-wrap">
             <button
               onClick={handleAnalyze}
               disabled={analyzing || !scriptText.trim() || !lastOutput?.rhubarbData}
@@ -188,14 +171,8 @@ export const VASEvaluation = ({ onBack }) => {
               }`}
             >
               {analyzing ? "Analyzing..." : "Analyze VAS"}
-            </button>
+            </button>         
           </div>
-          {lastOutput && (
-            <p className="text-gray-400 text-xs mt-2">
-              Last generated: "{lastOutput.text?.substring(0, 50)}
-              {lastOutput.text?.length > 50 ? "..." : ""}"
-            </p>
-          )}
           {!lastOutput && (
             <p className="text-yellow-400/70 text-xs mt-2">
               No lipsync data available. Generate lipsync on Avatar page first.
@@ -216,7 +193,7 @@ export const VASEvaluation = ({ onBack }) => {
                 VAS Score
               </h2>
               <div className="flex items-center gap-6">
-                <div className="text-center">
+                <div className="text-center shrink-0">
                   <div
                     className={`text-5xl font-bold ${getScoreColor(
                       analysisResult.vasScore
@@ -225,7 +202,7 @@ export const VASEvaluation = ({ onBack }) => {
                     {analysisResult.vasScore.toFixed(1)}%
                   </div>
                   <div className="text-gray-400 text-sm mt-1">
-                    {analysisResult.correct}/{analysisResult.total} correct
+                    {analysisResult.correct} / {analysisResult.total}
                   </div>
                 </div>
                 <div className="flex-1">
@@ -244,39 +221,25 @@ export const VASEvaluation = ({ onBack }) => {
                   </div>
                 </div>
               </div>
-              <div className="flex gap-4 mt-4 text-sm text-gray-400">
-                <span>Expected phonemes: {analysisResult.totalExpected}</span>
-                <span>Detected visemes: {analysisResult.totalDetected}</span>
-              </div>
               <div className="mt-3 text-xs text-gray-500">
-                Formula: VAS = (Correctly Mapped Visemes / Total Visemes) x 100
+                VAS = Phonemes recognized by Rhubarb / Total phonemes × 100
               </div>
             </div>
 
             {/* Comparison Table */}
             <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
               <h2 className="text-white text-lg font-semibold mb-4">
-                Detailed Comparison
+                Detail
               </h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-white/20">
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">
-                        #
-                      </th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">
-                        Kata · IPA Phone
-                      </th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">
-                        Expected Viseme ID
-                      </th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">
-                        Detected Viseme ID
-                      </th>
-                      <th className="text-center py-3 px-2 text-gray-400 font-medium">
-                        ✓ / X
-                      </th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium">#</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium">Word</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium">IPA (espeak)</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium">Rhubarb IPA</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium">Match</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -286,60 +249,46 @@ export const VASEvaluation = ({ onBack }) => {
                         className={`border-b border-white/5 ${
                           row.notInDictionary
                             ? "opacity-50"
+                            : row.expectedViseme === null
+                            ? ""
                             : row.isMatch
                             ? ""
                             : "bg-red-500/5"
                         }`}
                       >
-                        <td className="py-2 px-2 text-gray-500">
-                          {row.index}
+                        <td className="py-2 px-2 text-gray-500">{row.index}</td>
+                        <td className="py-2 px-2 text-white font-medium">{row.word}</td>
+                        <td className="py-2 px-2 text-blue-300 font-mono">{row.phoneme || "-"}</td>
+                        <td className={`py-2 px-2 font-mono ${
+                          row.expectedViseme === null
+                            ? "text-gray-500"
+                            : row.isMatch
+                            ? "text-green-300"
+                            : "text-red-400"
+                        }`}>
+                          {row.expectedViseme ? row.phoneme : "-"}
                         </td>
-                        <td className="py-2 px-2">
-                          <span className="text-white font-medium">{row.word}</span>
-                          <span className="text-gray-500 mx-1">·</span>
-                          <span className="text-blue-300 font-mono">{row.phoneme}</span>
-                        </td>
-                        <td className="py-2 px-2 text-green-300">
-                          {row.expectedViseme || "-"}
-                        </td>
-                        <td
-                          className={`py-2 px-2 ${
-                            row.isMatch ? "text-green-300" : "text-red-300"
-                          }`}
-                        >
-                          {row.detectedViseme || "-"}
-                        </td>
-                        <td className="py-2 px-2 text-center text-lg">
-                          {row.notInDictionary ? (
-                            <span className="text-yellow-400" title="Word not in dictionary">
-                              ?
-                            </span>
-                          ) : row.detectedViseme === null ? (
-                            <span className="text-gray-500">-</span>
-                          ) : row.isMatch ? (
-                            <span className="text-green-400">✓</span>
-                          ) : (
-                            <span className="text-red-400">X</span>
-                          )}
+                        <td className={`py-2 px-2 text-base ${
+                          row.notInDictionary
+                            ? "text-gray-500"
+                            : row.isMatch
+                            ? "text-green-400"
+                            : "text-red-400"
+                        }`}>
+                          {row.notInDictionary
+                            ? "-"
+                            : row.isMatch
+                            ? "✓"
+                            : "✗"}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-
-              {/* Legend */}
               <div className="mt-4 pt-4 border-t border-white/10 flex gap-6 text-xs text-gray-500">
-                <span>
-                  <span className="text-green-400 mr-1">V</span> Correct match
-                </span>
-                <span>
-                  <span className="text-red-400 mr-1">X</span> Mismatch
-                </span>
-                <span>
-                  <span className="text-yellow-400 mr-1">?</span> Word not in
-                  dictionary
-                </span>
+                <span><span className="text-green-400 mr-1">✓</span> Phoneme recognized by Rhubarb</span>
+                <span><span className="text-red-400 mr-1">✗</span> Phoneme not in Rhubarb viseme set</span>
               </div>
             </div>
           </>

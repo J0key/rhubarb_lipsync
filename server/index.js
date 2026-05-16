@@ -16,6 +16,7 @@ const RHUBARB_DIR = process.env.RHUBARB_DIR || DEFAULT_RHUBARB_DIR;
 const RHUBARB_PATH = process.env.RHUBARB_PATH || path.join(RHUBARB_DIR, DEFAULT_RHUBARB_BINARY);
 const PORT = process.env.PORT || 3001;
 const DIST_DIR = path.resolve(ROOT_DIR, "dist");
+const IS_WINDOWS = process.platform === "win32";
 
 const loadEnvFile = () => {
   const envPath = path.resolve(ROOT_DIR, ".env.local");
@@ -251,15 +252,15 @@ const handler = async (req, res) => {
         processingTimeSource: "Azure TTS request",
       });
 
-      await unlink(wavPath);
-      await unlink(outputPath);
+    await unlink(wavPath);
+    await unlink(outputPath);
     } catch (error) {
       jsonResponse(res, 500, { error: error.message || "Server error" });
     }
     return;
   }
 
-  await serveStatic(req, res);
+  jsonResponse(res, 404, { error: "Not found" });
 };
 
 loadEnvFile();

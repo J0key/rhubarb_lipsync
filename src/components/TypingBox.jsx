@@ -9,14 +9,8 @@ const VOICES = [
 export const TypingBox = () => {
   const [text, setText] = useState("");
   const [selectedVoice, setSelectedVoice] = useState(VOICES[0]);
-  const {
-    loading,
-    speak,
-    stop,
-    currentMessage,
-    lastOutput,
-    downloadAll,
-  } = useLipsyncStore();
+  const { loading, speak, stop, currentMessage, lastOutput, downloadAll } =
+    useLipsyncStore();
 
   const handleSubmit = () => {
     if (text.trim()) {
@@ -31,23 +25,23 @@ export const TypingBox = () => {
 
   return (
     <div className="bg-white/15 backdrop-blur-xl rounded-2xl p-4 sm:p-6 w-[92vw] sm:w-125 max-w-125 shadow-lg border border-white/20">
-      <h2 className="text-gray-800 text-lg sm:text-xl font-semibold mb-3">
-        Rhubarb Lipsync
-      </h2>
+      <div className="text-gray-800 text-xl text-center font-semibold mb-3">
+        Rhubarb 
+      </div>
 
       {/* Language toggle */}
-      <div className="flex gap-2 mb-3">
+      <div className="flex gap-1.5 mb-3 justify-center">
         {VOICES.map((v) => (
           <button
             key={v.voice}
             onClick={() => setSelectedVoice(v)}
-            className={`rounded-full py-1.5 px-4 text-xs font-semibold cursor-pointer transition-all flex items-center gap-1.5 ${
+            className={`flex items-center gap-1 rounded-lg py-1 px-2.5 text-xs font-medium transition-all border ${
               selectedVoice.voice === v.voice
-                ? "bg-green-500 text-white shadow"
-                : "bg-white/20 text-gray-700 hover:bg-white/40"
+                ? "bg-emerald-500 text-white border-emerald-600"
+                : "bg-white/30 text-gray-700 border-white/30 hover:bg-white/50"
             }`}
           >
-            <span className="uppercase text-[10px] opacity-70">{v.lang}</span>
+            <span className="uppercase opacity-70">{v.lang}</span>
             {v.label}
           </button>
         ))}
@@ -91,6 +85,7 @@ export const TypingBox = () => {
       )}
 
       {/* Download Section */}
+      {/*
       {lastOutput && !loading && (
         <div className="border-t border-white/20 mt-4 pt-4">
           <p className="text-gray-600 text-xs mb-2">Download Output:</p>
@@ -120,6 +115,7 @@ export const TypingBox = () => {
           </p>
         </div>
       )}
+       */}
     </div>
   );
 };
