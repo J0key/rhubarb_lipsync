@@ -76,11 +76,12 @@ export const useLipsyncStore = create((set, get) => ({
 
       const output = {
         text,
+        voice,
         visemes: legacyVisemes,
         rhubarbData,
         audioBlob,
         audioUrl,
-         processingTime,
+        processingTime,
         timestamp: new Date().toISOString(),
       };
 
