@@ -54,18 +54,31 @@ export const TypingBox = () => {
         </div>
       ) : (
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
-          <input
-            className="flex-1 bg-black/30 border-none rounded-full py-3 px-5 text-white text-sm outline-none placeholder:text-white/50"
-            placeholder="Drop your text here..."
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleSubmit();
-              }
-            }}
-            disabled={currentMessage !== null}
-          />
+          <div className="flex-1 flex gap-1.5 items-center">
+            <input
+              className="flex-1 bg-black/30 border-none rounded-full py-3 px-5 text-white text-sm outline-none placeholder:text-white/50"
+              placeholder="Drop your text here..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSubmit();
+                }
+              }}
+              disabled={currentMessage !== null}
+            />
+            {lastOutput?.text && !currentMessage && (
+              <button
+                title="Muat kembali teks sebelumnya"
+                onClick={() => setText(lastOutput.text)}
+                className="bg-white/20 hover:bg-white/40 rounded-full p-2.5 text-white transition-all shrink-0"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            )}
+          </div>
           {currentMessage ? (
             <button
               className="bg-red-500/80 hover:bg-red-500 rounded-full py-3 px-7 text-white text-sm font-medium cursor-pointer transition-all w-full sm:w-auto"
