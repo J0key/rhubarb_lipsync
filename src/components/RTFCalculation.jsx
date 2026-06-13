@@ -365,13 +365,13 @@ export const RTFCalculation = ({
   }, [audioBlob, processingTime, onResult]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6">
+    <div className="min-h-screen bg-[#ececec] p-6">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
           {onBack && (
             <button
               onClick={onBack}
-              className="bg-white/10 hover:bg-white/20 rounded-full py-2 px-4 text-white text-sm cursor-pointer transition-all flex items-center gap-2"
+              className="bg-white hover:bg-gray-100 rounded-full py-2 px-4 text-gray-700 text-sm cursor-pointer transition-all flex items-center gap-2 border border-gray-200 shadow-sm"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -390,73 +390,73 @@ export const RTFCalculation = ({
               Back to Avatar
             </button>
           )}
-          <h1 className="text-white text-2xl font-bold">RTF Calculation</h1>
+          <h1 className="text-gray-800 text-2xl font-bold">RTF Calculation</h1>
         </div>
 
-        {/* 
-<div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 mb-6 border border-white/20">
-          <h2 className="text-white text-lg font-semibold mb-4">Audio Format</h2>
+        {/*
+<div className="bg-white rounded-2xl p-6 mb-6 border border-gray-200 shadow-sm">
+          <h2 className="text-gray-800 text-lg font-semibold mb-4">Audio Format</h2>
           <div className="grid sm:grid-cols-2 gap-4 text-sm">
             <div>
               <div className="text-gray-500 mb-1">Container</div>
-              <div className="text-white font-medium">{AUDIO_FORMAT.container}</div>
+              <div className="text-gray-800 font-medium">{AUDIO_FORMAT.container}</div>
             </div>
             <div>
               <div className="text-gray-500 mb-1">Azure Output Format</div>
-              <div className="text-white font-medium">{AUDIO_FORMAT.azureOutputFormat}</div>
+              <div className="text-gray-800 font-medium">{AUDIO_FORMAT.azureOutputFormat}</div>
             </div>
           </div>
         </div>
  */}
 
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
-          <h2 className="text-white text-lg font-semibold mb-4">Result</h2>
+        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+          <h2 className="text-gray-800 text-lg font-semibold mb-4">Result</h2>
 
           {loading && (
-            <div className="flex items-center gap-3 text-gray-300">
-              <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+            <div className="flex items-center gap-3 text-gray-500">
+              <div className="w-5 h-5 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
               Generating audio...
             </div>
           )}
 
           {!loading && (!audioBlob || !Number.isFinite(processingTime)) && (
-            <div className="text-yellow-300/80 text-sm">
+            <div className="text-yellow-600 text-sm">
               Generate TTS audio on the Avatar page first. The RTF calculation
               uses the last generated audio blob and measured processing time.
             </div>
           )}
 
-          {error && <div className="text-red-300 text-sm">{error}</div>}
+          {error && <div className="text-red-500 text-sm">{error}</div>}
 
           {result && (
             <>
               <div className="grid sm:grid-cols-3 gap-4 mb-6">
-                <div className="bg-black/20 rounded-xl p-4 border border-white/10">
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                   <div className="text-gray-500 text-xs mb-1">
                     Processing Time
                   </div>
-                  <div className="text-white text-2xl font-semibold">
+                  <div className="text-gray-800 text-2xl font-semibold">
                     {result.processingTime.toFixed(3)}s
                   </div>
                 </div>
-                <div className="bg-black/20 rounded-xl p-4 border border-white/10">
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                   <div className="text-gray-500 text-xs mb-1">
                     Full WAV Duration
                   </div>
-                  <div className="text-white text-2xl font-semibold">
+                  <div className="text-gray-800 text-2xl font-semibold">
                     {result.decodedDuration.toFixed(3)}s
                   </div>
                 </div>
-                <div className="bg-black/20 rounded-xl p-4 border border-white/10">
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                   <div className="text-gray-500 text-xs mb-1">RTF</div>
-                  <div className="text-white text-2xl font-semibold">
+                  <div className="text-gray-800 text-2xl font-semibold">
                     {result.rtf.toFixed(4)}
                   </div>
                 </div>
               </div>
 
               {lastOutput?.text && (
-                <p className="text-gray-500 text-xs mt-4">
+                <p className="text-gray-400 text-xs mt-4">
                   Last: &ldquo;{lastOutput.text.substring(0, 80)}
                   {lastOutput.text.length > 80 ? "..." : ""}&rdquo;
                 </p>

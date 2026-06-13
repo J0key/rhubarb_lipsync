@@ -116,13 +116,13 @@ export const VASEvaluation = ({ onBack }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6">
+    <div className="min-h-screen bg-[#ececec] p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <button
             onClick={onBack}
-            className="bg-white/10 hover:bg-white/20 rounded-full py-2 px-4 text-white text-sm cursor-pointer transition-all flex items-center gap-2"
+            className="bg-white hover:bg-gray-100 rounded-full py-2 px-4 text-gray-700 text-sm cursor-pointer transition-all flex items-center gap-2 border border-gray-200 shadow-sm"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -140,17 +140,17 @@ export const VASEvaluation = ({ onBack }) => {
             </svg>
             Back to Avatar
           </button>
-          <h1 className="text-white text-2xl font-bold">
+          <h1 className="text-gray-800 text-2xl font-bold">
             VAS Evaluation — Rhubarb
           </h1>
         </div>
 
         {/* Input Section */}
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 mb-6 border border-white/20">
-          <h2 className="text-white text-lg font-semibold mb-3">Script</h2>
+        <div className="bg-white rounded-2xl p-6 mb-6 border border-gray-200 shadow-sm">
+          <h2 className="text-gray-800 text-lg font-semibold mb-3">Script</h2>
           <div className="flex gap-3 items-start">
             <textarea
-              className="flex-1 bg-black/30 border border-white/10 rounded-xl py-3 px-4 text-white text-sm outline-none placeholder:text-white/40 resize-none min-h-[60px]"
+              className="flex-1 bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 text-gray-800 text-sm outline-none placeholder:text-gray-400 resize-none min-h-[60px] focus:border-purple-400 focus:ring-1 focus:ring-purple-400 transition-all"
               placeholder="Enter script text (e.g. Place red at B five now)"
               value={scriptText}
               onChange={(e) => {
@@ -168,26 +168,26 @@ export const VASEvaluation = ({ onBack }) => {
               }
               className={`rounded-xl py-2 px-4 text-sm cursor-pointer transition-all font-medium ${
                 !analyzing && scriptText.trim() && lastOutput?.rhubarbData
-                  ? "bg-purple-500/70 hover:bg-purple-500/90 text-white"
-                  : "bg-gray-600/40 text-gray-400 cursor-not-allowed"
+                  ? "bg-purple-500 hover:bg-purple-600 text-white"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
               }`}
             >
               {analyzing ? "Analyzing..." : "Analyze VAS"}
             </button>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-gray-500">
               Language:{" "}
-              <span className="text-white font-medium">
+              <span className="text-gray-700 font-medium">
                 {lang === "id" ? "🇮🇩 Indonesia" : "🇺🇸 English"}
               </span>
             </span>
           </div>
           {!lastOutput && (
-            <p className="text-yellow-400/70 text-xs mt-2">
+            <p className="text-yellow-600 text-xs mt-2">
               No lipsync data available. Generate lipsync on Avatar page first.
             </p>
           )}
           {phonemizerError && (
-            <p className="text-red-400 text-xs mt-2">
+            <p className="text-red-500 text-xs mt-2">
               Phonemizer error: {phonemizerError}
             </p>
           )}
@@ -196,8 +196,8 @@ export const VASEvaluation = ({ onBack }) => {
         {/* VAS Score Display */}
         {analysisResult && (
           <>
-            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 mb-6 border border-white/20">
-              <h2 className="text-white text-lg font-semibold mb-4">
+            <div className="bg-white rounded-2xl p-6 mb-6 border border-gray-200 shadow-sm">
+              <h2 className="text-gray-800 text-lg font-semibold mb-4">
                 VAS Score
               </h2>
               <div className="flex items-center gap-6">
@@ -209,12 +209,12 @@ export const VASEvaluation = ({ onBack }) => {
                   >
                     {analysisResult.vasScore.toFixed(1)}%
                   </div>
-                  <div className="text-gray-400 text-sm mt-1">
+                  <div className="text-gray-500 text-sm mt-1">
                     {analysisResult.correct} / {analysisResult.total}
                   </div>
                 </div>
                 <div className="flex-1">
-                  <div className="w-full bg-white/10 rounded-full h-4 overflow-hidden">
+                  <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${getBarColor(
                         analysisResult.vasScore,
@@ -222,38 +222,38 @@ export const VASEvaluation = ({ onBack }) => {
                       style={{ width: `${analysisResult.vasScore}%` }}
                     />
                   </div>
-                  <div className="flex justify-between text-gray-500 text-xs mt-1">
+                  <div className="flex justify-between text-gray-400 text-xs mt-1">
                     <span>0%</span>
                     <span>50%</span>
                     <span>100%</span>
                   </div>
                 </div>
               </div>
-              <div className="mt-3 text-xs text-gray-500">
+              <div className="mt-3 text-xs text-gray-400">
                 VAS = Phonemes recognized by Rhubarb / Total phonemes × 100
               </div>
             </div>
 
             {/* Comparison Table */}
-            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
-              <h2 className="text-white text-lg font-semibold mb-4">Detail</h2>
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+              <h2 className="text-gray-800 text-lg font-semibold mb-4">Detail</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-white/20">
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-2 text-gray-500 font-medium">
                         #
                       </th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">
+                      <th className="text-left py-3 px-2 text-gray-500 font-medium">
                         Word
                       </th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">
+                      <th className="text-left py-3 px-2 text-gray-500 font-medium">
                         IPA (espeak)
                       </th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">
+                      <th className="text-left py-3 px-2 text-gray-500 font-medium">
                         Rhubarb IPA
                       </th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">
+                      <th className="text-left py-3 px-2 text-gray-500 font-medium">
                         Match
                       </th>
                     </tr>
@@ -262,30 +262,30 @@ export const VASEvaluation = ({ onBack }) => {
                     {analysisResult.comparison.map((row) => (
                       <tr
                         key={row.index}
-                        className={`border-b border-white/5 ${
+                        className={`border-b border-gray-100 ${
                           row.notInDictionary
                             ? "opacity-50"
                             : row.expectedViseme === null
                               ? ""
                               : row.isMatch
                                 ? ""
-                                : "bg-red-500/5"
+                                : "bg-red-50"
                         }`}
                       >
-                        <td className="py-2 px-2 text-gray-500">{row.index}</td>
-                        <td className="py-2 px-2 text-white font-medium">
+                        <td className="py-2 px-2 text-gray-400">{row.index}</td>
+                        <td className="py-2 px-2 text-gray-800 font-medium">
                           {row.word}
                         </td>
-                        <td className="py-2 px-2 text-blue-300 font-mono">
+                        <td className="py-2 px-2 text-blue-500 font-mono">
                           {row.phoneme || "-"}
                         </td>
                         <td
                           className={`py-2 px-2 font-mono ${
                             row.expectedViseme === null
-                              ? "text-gray-500"
+                              ? "text-gray-400"
                               : row.isMatch
-                                ? "text-green-300"
-                                : "text-red-400"
+                                ? "text-green-600"
+                                : "text-red-500"
                           }`}
                         >
                           {row.expectedViseme ? row.phoneme : "-"}
@@ -293,10 +293,10 @@ export const VASEvaluation = ({ onBack }) => {
                         <td
                           className={`py-2 px-2 text-base ${
                             row.notInDictionary
-                              ? "text-gray-500"
+                              ? "text-gray-400"
                               : row.isMatch
-                                ? "text-green-400"
-                                : "text-red-400"
+                                ? "text-green-500"
+                                : "text-red-500"
                           }`}
                         >
                           {row.notInDictionary ? "-" : row.isMatch ? "✓" : "✗"}
@@ -306,13 +306,13 @@ export const VASEvaluation = ({ onBack }) => {
                   </tbody>
                 </table>
               </div>
-              <div className="mt-4 pt-4 border-t border-white/10 flex gap-6 text-xs text-gray-500">
+              <div className="mt-4 pt-4 border-t border-gray-100 flex gap-6 text-xs text-gray-400">
                 <span>
-                  <span className="text-green-400 mr-1">✓</span> Phoneme
+                  <span className="text-green-500 mr-1">✓</span> Phoneme
                   recognized by Rhubarb
                 </span>
                 <span>
-                  <span className="text-red-400 mr-1">✗</span> Phoneme not in
+                  <span className="text-red-500 mr-1">✗</span> Phoneme not in
                   Rhubarb viseme set
                 </span>
               </div>
